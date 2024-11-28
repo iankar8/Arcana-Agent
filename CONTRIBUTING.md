@@ -8,105 +8,216 @@ We love your input! We want to make contributing to Arcana Agent Framework as ea
 - Proposing new features
 - Becoming a maintainer
 
-## We Develop with Github
-We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
-
-## We Use [Github Flow](https://guides.github.com/introduction/flow/index.html)
-Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:
-
-1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints.
-6. Issue that pull request!
-
-## Any contributions you make will be under the MIT Software License
-In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
-
-## Report bugs using Github's [issue tracker](https://github.com/codeium/arcana-agent/issues)
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/codeium/arcana-agent/issues/new); it's that easy!
-
-## Write bug reports with detail, background, and sample code
-
-**Great Bug Reports** tend to have:
-
-- A quick summary and/or background
-- Steps to reproduce
-  - Be specific!
-  - Give sample code if you can.
-- What you expected would happen
-- What actually happens
-- Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
-
 ## Development Process
 
-1. Clone the repository
+1. **Fork and Clone**
 ```bash
-git clone https://github.com/codeium/arcana-agent.git
-cd arcana-agent
+git clone https://github.com/YOUR_USERNAME/Arcana-Agent.git
+cd Arcana-Agent
 ```
 
-2. Create a virtual environment and install dependencies
+2. **Set Up Development Environment**
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-pip install -e ".[dev]"
+# Create virtual environment
+python -m venv env
+source env/bin/activate  # On Windows: env\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# Set up pre-commit hooks
+pre-commit install
 ```
 
-3. Create a branch
+3. **Create a Branch**
 ```bash
-git checkout -b feature-name
+git checkout -b feature/your-feature-name
+# or
+git checkout -b fix/your-bug-fix
 ```
 
-4. Make your changes
-- Write your code
-- Add tests if applicable
-- Update documentation if needed
+4. **Make Your Changes**
+- Write your code following our style guidelines
+- Add tests for new functionality
+- Update documentation as needed
 
-5. Run tests and linting
+5. **Test Your Changes**
 ```bash
-# Run tests
+# Run all tests
 pytest
 
+# Run specific test file
+pytest tests/test_your_feature.py
+
+# Run with coverage
+pytest --cov=./ --cov-report=term-missing
+
 # Run linting
+flake8
 black .
-isort .
 mypy .
 ```
 
-6. Commit your changes
+6. **Commit Your Changes**
 ```bash
 git add .
-git commit -m "Description of changes"
+git commit -m "feat: add new feature"  # or "fix: resolve bug"
 ```
 
-7. Push to your fork and submit a pull request
+Follow our commit message conventions:
+- `feat:` for new features
+- `fix:` for bug fixes
+- `docs:` for documentation changes
+- `test:` for test-related changes
+- `refactor:` for code refactoring
+- `style:` for formatting changes
+- `chore:` for maintenance tasks
+
+7. **Push and Create Pull Request**
 ```bash
-git push origin feature-name
+git push origin feature/your-feature-name
 ```
 
-## Code Style
+## Code Style Guidelines
 
-We use several tools to maintain code quality:
+### Python Style
+We follow PEP 8 with some modifications:
+- Line length: 100 characters
+- Use type hints for function arguments and return values
+- Use docstrings for classes and functions
 
-- [Black](https://black.readthedocs.io/) for code formatting
-- [isort](https://pycqa.github.io/isort/) for import sorting
-- [mypy](http://mypy-lang.org/) for static type checking
-- [pylint](https://www.pylint.org/) for code analysis
+Example:
+```python
+from typing import List, Dict
 
-Please ensure your code passes all style checks before submitting:
-
-```bash
-# Install dev dependencies if you haven't already
-pip install -e ".[dev]"
-
-# Run style checks
-black --check .
-isort --check-only .
-mypy .
-pylint arcana_agent
+def process_data(input_data: List[Dict]) -> Dict:
+    """
+    Process the input data and return summarized results.
+    
+    Args:
+        input_data: List of dictionaries containing raw data
+        
+    Returns:
+        Dictionary containing processed results
+        
+    Raises:
+        ValueError: If input_data is empty
+    """
+    if not input_data:
+        raise ValueError("Input data cannot be empty")
+    
+    # Process data here
+    return {"result": "processed"}
 ```
+
+### Testing Guidelines
+- Write tests for all new features
+- Maintain test coverage above 80%
+- Use meaningful test names and descriptions
+- Include both positive and negative test cases
+
+Example:
+```python
+import pytest
+from your_module import YourClass
+
+class TestYourClass:
+    @pytest.fixture
+    def instance(self):
+        return YourClass()
+    
+    def test_successful_operation(self, instance):
+        """Test that operation succeeds with valid input."""
+        result = instance.operation(valid_input)
+        assert result.status == "success"
+    
+    def test_handles_invalid_input(self, instance):
+        """Test that operation fails gracefully with invalid input."""
+        with pytest.raises(ValueError):
+            instance.operation(invalid_input)
+```
+
+## Documentation Guidelines
+
+### Docstrings
+Use Google-style docstrings:
+```python
+def complex_function(param1: str, param2: int) -> Dict[str, Any]:
+    """
+    Brief description of function.
+
+    Longer description if needed.
+
+    Args:
+        param1: Description of param1
+        param2: Description of param2
+
+    Returns:
+        Description of return value
+
+    Raises:
+        ValueError: Description of when this error occurs
+        RuntimeError: Description of when this error occurs
+    """
+```
+
+### README Updates
+- Keep code examples up to date
+- Ensure installation steps work
+- Document new features
+- Update API reference when needed
+
+## Issue Guidelines
+
+### Bug Reports
+When reporting bugs, include:
+```markdown
+### Description
+Brief description of the bug
+
+### Steps to Reproduce
+1. Step 1
+2. Step 2
+3. Step 3
+
+### Expected Behavior
+What should happen
+
+### Actual Behavior
+What actually happens
+
+### Environment
+- OS: [e.g., Ubuntu 20.04]
+- Python Version: [e.g., 3.8.5]
+- Framework Version: [e.g., 1.0.0]
+
+### Additional Context
+Any other relevant information
+```
+
+### Feature Requests
+When requesting features:
+```markdown
+### Problem
+Describe the problem this feature would solve
+
+### Proposed Solution
+Describe your proposed solution
+
+### Alternatives Considered
+Other solutions you've considered
+
+### Additional Context
+Any other relevant information
+```
+
+## Getting Help
+
+- Join our [Discussions](https://github.com/iankar8/Arcana-Agent/discussions)
+- Check existing issues and pull requests
+- Reach out to maintainers
 
 ## License
-By contributing, you agree that your contributions will be licensed under its MIT License.
+
+By contributing, you agree that your contributions will be licensed under the MIT License.

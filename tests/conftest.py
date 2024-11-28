@@ -3,6 +3,10 @@ import pytest_asyncio
 import os
 import json
 from pathlib import Path
+from unittest.mock import patch
+from core.anthropic_nlu import AnthropicNLU
+from core.simple_task_planner import SimpleTaskPlanner
+from core.smart_response_builder import SmartResponseBuilder
 
 # Load test data fixtures
 @pytest.fixture
@@ -93,3 +97,35 @@ def performance_config():
         'timeout': 30,
         'max_retries': 3
     }
+
+# Core component fixtures
+@pytest.fixture
+def mock_anthropic_client():
+    with patch('anthropic.Anthropic') as mock:
+        yield mock
+
+@pytest.fixture
+def nlu(mock_anthropic_client):
+    return AnthropicNLU("test_api_key")
+
+@pytest.fixture
+def task_planner():
+    return SimpleTaskPlanner()
+
+@pytest.fixture
+def response_builder():
+    return SmartResponseBuilder()
+
+# Setup logging for tests
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_logging():
+    """Configure logging for tests."""
+    import logging
+    from core.logging_config import setup_logging
+    
+    # Setup test logging
+    setup_logging(
+        log_level=logging.DEBUG,
+        log_file="logs/test.log"
+    )
+    return logging.getLogger("test")
