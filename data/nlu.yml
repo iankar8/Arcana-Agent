@@ -1,0 +1,20 @@
+version: "2.0"
+
+nlu:
+- intent: greet
+  examples: |
+    - hello
+    - hi
+    - hey
+
+- intent: create_agent
+  examples: |
+    - create a new agent
+    - I want to add an agent
+    - add a new agent called [AgentX](agent_name)
+
+- intent: ask_help
+  examples: |
+    - can you help me?
+    - I need assistance
+    - how does this work?

@@ -1,0 +1,11 @@
+# Example requirements file
+# Add your project dependencies here
+
+asyncio
+aiohttp
+spacy
+# or
+# nltk
+Flask
+flask_cors
+gunicorn
