@@ -1,11 +1,30 @@
 # Example requirements file
 # Add your project dependencies here
 
-asyncio
-aiohttp
-spacy
-# or
-# nltk
-Flask
-flask_cors
-gunicorn
+# Core dependencies
+aiohttp==3.9.5
+asyncio>=3.4.3
+python-dotenv==1.0.1
+anthropic==0.39.0
+selenium>=4.18.1
+webdriver-manager>=4.0.1
+python-dateutil==2.8.2
+
+# Browser automation (uncomment based on your choice)
+playwright==1.49.0  # Modern browser automation
+# selenium>=4.16.0    # Traditional browser automation
+
+# Type hints
+typing-extensions>=4.9.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+
+# Development
+black>=23.12.0
+isort>=5.13.0
+mypy>=1.8.0
+
+# Removed Flask, flask_cors, gunicorn as they are no longer needed

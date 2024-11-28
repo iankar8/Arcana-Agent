@@ -1,93 +1,145 @@
-# Arcana Agent Framework 1
+# Arcana Agent Framework
 
-This project is designed to provide a framework for building intelligent agents. It includes modules for agent communication, decision-making, and learning.
+A flexible, intelligent web automation framework for real-world tasks. Built with modern Python and powered by AI, Arcana helps developers create robust web automation solutions that can adapt to changing websites and handle complex workflows.
 
-## Project Structure
-- `agents/`: Contains agent implementations.
-- `communication/`: Handles message passing between agents.
-- `decision_making/`: Algorithms and strategies for agent decision-making.
-- `learning/`: Machine learning models and utilities for agents.
+## Key Features
 
-## Getting Started
-1. Clone the repository.
-2. Install dependencies using the provided `requirements.txt`.
-3. Run the example agent to see the framework in action.
+### 🤖 Intelligent Web Automation
+- **Multi-Strategy Navigation**: Adapts to different website structures and layouts
+- **AI-Powered Interaction**: Uses Claude API for intelligent decision making
+- **Anti-Detection Mechanisms**: Built-in protections against bot detection
+- **Parallel Task Processing**: Execute multiple tasks efficiently
 
-## Requirements
-- Python 3.8+
+### 🛠️ Flexible Architecture
+- **Strategy Pattern**: Dynamically selects best approach for each task
+- **Plugin System**: Easily extend with custom tools and strategies
+- **Error Recovery**: Automatic retry and fallback mechanisms
+- **State Management**: Persistent task state and progress tracking
+
+### 🔌 Built-in Integrations
+- **Browser Automation**: Selenium and Playwright support
+- **AI Services**: Claude API integration
+- **Authentication**: Multiple auth strategies (Form, OAuth, Cookie)
+- **Data Extraction**: Multiple extraction methods (Direct, API, Visual)
 
 ## Installation
-To install the necessary dependencies, run:
-```
-pip install -r requirements.txt
-```
 
-## Usage
-To run the example agent:
-```
-python agents/example_agent.py
+### Basic Installation
+```bash
+pip install arcana-agent
 ```
 
-## Current Status
+### Development Installation
+```bash
+git clone https://github.com/codeium/arcana-agent.git
+cd arcana-agent
+pip install -e ".[dev]"
+```
 
-The Arcana Agent Framework is in active development, focusing on providing a robust platform for creating and managing intelligent agents. The framework supports:
+## Quick Start
 
-- **Agent Communication**: Facilitates message passing and interaction between agents.
-- **Task Management**: Allows agents to perform and coordinate tasks efficiently.
-- **Natural Language Processing**: Integrates NLP capabilities for understanding and generating human language.
-- **Visualization Tools**: Includes tools for visualizing agent interactions and task assignments.
+```python
+from arcana_agent import LastMileAgent
 
-### Recent Updates
-- Implemented a command-line interface for agent interaction.
-- Added a GUI for user-friendly testing and debugging.
-- Developed a visualization module to simulate and display agent communications.
+# Initialize agent
+agent = LastMileAgent()
 
-The framework is designed to be extensible, allowing developers to integrate custom agents and modules to suit specific needs. Future updates will focus on enhancing scalability and adding more advanced machine learning models.
+# Example: Book a restaurant
+result = await agent.execute_task({
+    "type": "restaurant_booking",
+    "restaurant": "Absinthe Brasserie",
+    "date": "2024-03-20",
+    "time": "19:00",
+    "guests": 4
+})
 
-## Project Overview
-The Arcana Agent Framework is a flexible, modular agent-based system designed for intelligent task management and communication. It supports dynamic agent creation, task decomposition, and interactive visualization of agent interactions.
+# Example: Fill a complex form
+result = await agent.execute_task({
+    "type": "form_filling",
+    "url": "https://example.com/form",
+    "form_data": {
+        "name": "John Doe",
+        "email": "john@example.com",
+        "preferences": ["option1", "option2"]
+    }
+})
+```
 
-## Installation Instructions
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/ArcanaAgentFramework.git
-   ```
-2. **Navigate to the project directory**:
-   ```bash
-   cd ArcanaAgentFramework
-   ```
-3. **Set up a virtual environment**:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate  # On Windows use `.venv\Scripts\activate`
-   ```
-4. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Advanced Usage
 
-## Usage Examples
-- **Start the CLI**:
-  Run the main script to interact with the CLI:
-  ```bash
-  python3 main.py
-  ```
-- **Interact with Agents**:
-  Use the CLI to send commands and manage tasks interactively.
+### Custom Strategy Implementation
+```python
+from arcana_agent import Strategy, LastMileAgent
 
-## API Reference
-- **AgentManager**: Handles agent registration, task decomposition, and message passing.
-- **TaskAgent**: Specialized agent for processing tasks based on intents.
-- **Visualization**: Provides graphical representation of agent interactions.
+class CustomStrategy(Strategy):
+    async def execute(self, task):
+        # Custom implementation
+        pass
+
+agent = LastMileAgent()
+agent.add_strategy("custom", CustomStrategy())
+```
+
+### Parallel Task Execution
+```python
+tasks = [
+    {"type": "data_extraction", "url": "https://site1.com"},
+    {"type": "data_extraction", "url": "https://site2.com"}
+]
+
+results = await agent.execute_parallel(tasks)
+```
+
+## Configuration
+
+### Environment Variables
+```bash
+CLAUDE_API_KEY=your_api_key_here
+BROWSER_TYPE=playwright  # or selenium
+DEBUG_LEVEL=INFO
+```
+
+### Custom Configuration
+```python
+agent = LastMileAgent(
+    config={
+        "max_retries": 3,
+        "timeout": 30,
+        "browser": {
+            "headless": True,
+            "user_agent": "custom-user-agent"
+        }
+    }
+)
+```
 
 ## Contributing
-We welcome contributions! Please fork the repository and submit a pull request with your changes. Ensure all tests pass before submitting.
 
-## Contribution Guidelines
-We welcome contributions! Please fork the repository and submit a pull request with your changes. Ensure all tests pass before submitting.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-## Feedback
-For feedback or questions, please contact us at [your-email@example.com].
+### Development Setup
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
 
-## Contributing
-Feel free to submit issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
+# Run tests
+pytest
+
+# Run linting
+black .
+isort .
+mypy .
+```
+
+## Documentation
+
+Full documentation is available at [https://arcana-agent.readthedocs.io/](https://arcana-agent.readthedocs.io/)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Built with [Selenium](https://www.selenium.dev/) and [Playwright](https://playwright.dev/)
+- Powered by [Anthropic's Claude API](https://www.anthropic.com/)

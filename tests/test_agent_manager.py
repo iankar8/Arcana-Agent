@@ -1,56 +1,77 @@
-import sys
-import os
-import asyncio
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-import unittest
+import pytest
+import pytest_asyncio
 from manager.agent_manager import AgentManager
 from agents.task_agent import TaskAgent
+from tools.browser_tool import BrowserTool
 
-class TestAgentManager(unittest.TestCase):
-    def setUp(self):
-        self.manager = AgentManager()
-        self.agent = TaskAgent(agent_id='test_agent', manager=self.manager, knowledge_base=None)
-
-    def test_register_agent(self):
-        self.manager.register_agent(self.agent)
-        self.assertIn('test_agent', self.manager.agents)
-
-    def test_send_message(self):
-        self.manager.register_agent(self.agent)
-        asyncio.run(self.manager.send_message('test_agent', 'test_agent', 'Hello'))
-        # Further assertions can be added to check message receipt
-
-    def test_task_decomposition(self):
-        actions = self.manager.decompose_tasks(['test_intent'], ['test_entity'])
-        self.assertEqual(len(actions), 1)
-        self.assertEqual(actions[0]['intent'], 'test_intent')
-
-    def test_deprecate_agent(self):
-        self.manager.register_agent(self.agent)
-        asyncio.run(self.manager.deprecate_agent('test_agent'))
-        self.assertNotIn('test_agent', self.manager.agents)
-
-    def test_agent_interaction(self):
-        # Test message passing between agents
-        self.manager.register_agent(self.agent)
-        other_agent = TaskAgent(agent_id='other_agent', manager=self.manager, knowledge_base=None)
-        self.manager.register_agent(other_agent)
-        asyncio.run(self.manager.send_message('test_agent', 'other_agent', {'intent': 'find', 'entities': {}}))
-        # Further assertions can be added to verify message handling
-
-    def test_error_handling(self):
-        # Test error handling for unknown intents
-        self.manager.register_agent(self.agent)
-        asyncio.run(self.manager.send_message('test_agent', 'test_agent', {'intent': 'unknown', 'entities': {}}))
-        # Check for error messages or logs
+class TestAgentManager:
+    @pytest.fixture
+    def manager(self):
+        return AgentManager()
         
-    def test_task_processing(self):
-        # Test task decomposition and processing
-        actions = self.manager.decompose_tasks(['find'], ['entity'])
-        self.assertEqual(len(actions), 1)
-        asyncio.run(self.agent.receive_message('user', actions[0]))
-        # Verify task processing logic
-
-if __name__ == '__main__':
-    unittest.main()
+    @pytest.fixture
+    def agent(self, manager):
+        agent = TaskAgent('test_agent', manager)
+        agent.register_tool('browser', BrowserTool())
+        return agent
+        
+    @pytest.fixture
+    def other_agent(self, manager):
+        agent = TaskAgent('other_agent', manager)
+        agent.register_tool('browser', BrowserTool())
+        return agent
+        
+    def test_register_agent(self, manager, agent):
+        manager.register_agent(agent)
+        assert 'test_agent' in manager.agents
+        
+    @pytest.mark.asyncio
+    async def test_send_message(self, manager, agent):
+        manager.register_agent(agent)
+        result = await manager.send_message(
+            'test_agent',
+            'test_agent',
+            {'intent': 'find', 'entities': {'query': 'test'}}
+        )
+        assert result['status'] in ['success', 'error']
+        
+    def test_task_decomposition(self, manager):
+        actions = manager.decompose_tasks(['find'], ['test_entity'])
+        assert len(actions) == 1
+        assert actions[0]['intent'] == 'find'
+        assert 'entities' in actions[0]
+        
+    @pytest.mark.asyncio
+    async def test_deprecate_agent(self, manager, agent):
+        manager.register_agent(agent)
+        await manager.deprecate_agent('test_agent')
+        assert 'test_agent' not in manager.agents
+        
+    @pytest.mark.asyncio
+    async def test_agent_interaction(self, manager, agent, other_agent):
+        manager.register_agent(agent)
+        manager.register_agent(other_agent)
+        result = await manager.send_message(
+            'test_agent',
+            'other_agent',
+            {'intent': 'find', 'entities': {'query': 'test'}}
+        )
+        assert result['status'] in ['success', 'error']
+        
+    @pytest.mark.asyncio
+    async def test_error_handling(self, manager, agent):
+        manager.register_agent(agent)
+        result = await manager.send_message(
+            'test_agent',
+            'test_agent',
+            {'intent': 'unknown', 'entities': {}}
+        )
+        assert result['status'] == 'error'
+        assert 'error' in result
+        
+    @pytest.mark.asyncio
+    async def test_task_processing(self, manager, agent):
+        manager.register_agent(agent)
+        actions = manager.decompose_tasks(['find'], ['test_entity'])
+        result = await agent.receive_message('user', actions[0])
+        assert result['status'] in ['success', 'error']

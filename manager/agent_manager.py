@@ -16,7 +16,9 @@ class AgentManager:
 
     async def send_message(self, sender_id, recipient_id, message):
         if recipient_id in self.agents:
-            await self.agents[recipient_id].receive_message(sender_id, message)
+            agent = self.agents[recipient_id]
+            print(f"Sending message to agent {recipient_id}, type: {type(agent)}")  # Debugging line
+            await agent.receive_message(sender_id, message)
         else:
             print(f"Agent {recipient_id} not found.")
 
