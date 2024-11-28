@@ -1,0 +1,38 @@
+{
+    "form": {
+        "id": "booking-form",
+        "fields": [
+            {
+                "name": "restaurant",
+                "type": "text",
+                "required": true,
+                "placeholder": "Restaurant Name"
+            },
+            {
+                "name": "date",
+                "type": "date",
+                "required": true
+            },
+            {
+                "name": "time",
+                "type": "time",
+                "required": true
+            },
+            {
+                "name": "guests",
+                "type": "select",
+                "required": true,
+                "options": [
+                    {"value": "1", "text": "1 Guest"},
+                    {"value": "2", "text": "2 Guests"},
+                    {"value": "3", "text": "3 Guests"},
+                    {"value": "4", "text": "4 Guests"}
+                ]
+            }
+        ],
+        "submit": {
+            "type": "button",
+            "text": "Book Now"
+        }
+    }
+}

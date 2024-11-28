@@ -21,6 +21,11 @@ typing-extensions>=4.9.0
 pytest>=7.4.0
 pytest-asyncio>=0.23.0
 pytest-cov>=4.1.0
+pytest-xdist>=3.5.0  # Parallel test execution
+pytest-timeout>=2.2.0  # Test timeout management
+pytest-benchmark>=4.0.0  # Performance benchmarking
+psutil>=5.9.0  # System resource monitoring
+coverage>=7.4.0  # Code coverage reporting
 
 # Development
 black>=23.12.0

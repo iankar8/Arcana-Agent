@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Restaurant Booking</title>
+</head>
+<body>
+    <form id="booking-form">
+        <input type="text" name="restaurant" placeholder="Restaurant Name">
+        <input type="date" name="date">
+        <input type="time" name="time">
+        <select name="guests">
+            <option value="1">1 Guest</option>
+            <option value="2">2 Guests</option>
+            <option value="3">3 Guests</option>
+            <option value="4">4 Guests</option>
+        </select>
+        <button type="submit">Book Now</button>
+    </form>
+    <div id="confirmation" style="display: none;">
+        <h2>Booking Confirmed!</h2>
+        <p>Your reservation details:</p>
+        <div id="booking-details"></div>
+    </div>
+</body>
+</html>
