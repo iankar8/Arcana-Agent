@@ -1,83 +1,179 @@
-"""Agent Registry System for Arcana Agent Framework."""
+"""Registry for managing and coordinating agents in the system."""
 
-from typing import Dict, Type, List, Optional
-from .interfaces import AgentInterface
-from .logging_config import get_logger
+from typing import Dict, Type, Optional, List, Any
+import asyncio
+from datetime import datetime
+
+from core.interfaces import Agent
+from core.protocol import Message, ProtocolError
+from core.monitoring import MetricsCollector
+from core.error_handling import ErrorHandler
+from core.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 class AgentRegistry:
-    """Registry for managing and accessing agents."""
-    
-    def __init__(self):
-        self._agents: Dict[str, Type[AgentInterface]] = {}
-        self._descriptions: Dict[str, str] = {}
-        self._capabilities: Dict[str, List[str]] = {}
-        self.logger = get_logger(self.__class__.__name__)
-    
-    def register(
+    """Central registry for managing agents in the system."""
+
+    def __init__(
         self,
-        action: str,
-        agent_cls: Type[AgentInterface],
-        description: str = "",
-        capabilities: Optional[List[str]] = None
-    ) -> None:
-        """Register an agent class for a specific action."""
-        if action in self._agents:
-            self.logger.warning(f"Overwriting existing agent for action: {action}")
+        metrics_collector: MetricsCollector,
+        error_handler: ErrorHandler
+    ):
+        self.metrics = metrics_collector
+        self.error_handler = error_handler
+        self._agents: Dict[str, Agent] = {}
+        self._agent_classes: Dict[str, Type[Agent]] = {}
+        self._active_agents: Dict[str, bool] = {}
+        self._logger = get_logger(self.__class__.__name__)
+
+    async def register(self, name: str, agent_class: Type[Agent]) -> None:
+        """Register an agent class with the registry."""
+        if name in self._agent_classes:
+            raise ValueError(f"Agent '{name}' is already registered")
         
-        self._agents[action] = agent_cls
-        self._descriptions[action] = description
-        self._capabilities[action] = capabilities or []
+        self._agent_classes[name] = agent_class
+        self._logger.info(f"Registered agent class: {name}")
         
-        self.logger.info(f"Registered agent {agent_cls.__name__} for action: {action}")
-    
-    def unregister(self, action: str) -> None:
-        """Unregister an agent for a specific action."""
-        if action in self._agents:
-            agent_cls = self._agents[action]
-            del self._agents[action]
-            del self._descriptions[action]
-            del self._capabilities[action]
-            self.logger.info(f"Unregistered agent {agent_cls.__name__} for action: {action}")
-        else:
-            self.logger.warning(f"No agent registered for action: {action}")
-    
-    def get_agent(self, action: str) -> Type[AgentInterface]:
-        """Get the agent class for a specific action."""
-        if action not in self._agents:
-            self.logger.error(f"No agent registered for action: {action}")
-            raise KeyError(f"No agent registered for action: {action}")
-        
-        return self._agents[action]
-    
-    def get_description(self, action: str) -> str:
-        """Get the description for a specific action."""
-        return self._descriptions.get(action, "")
-    
-    def get_capabilities(self, action: str) -> List[str]:
-        """Get the capabilities for a specific action."""
-        return self._capabilities.get(action, [])
-    
-    def list_actions(self) -> List[str]:
-        """List all registered actions."""
-        return list(self._agents.keys())
-    
-    def get_agents_by_capability(self, capability: str) -> List[str]:
-        """Get all actions that have a specific capability."""
-        return [
-            action
-            for action, caps in self._capabilities.items()
-            if capability in caps
-        ]
-    
-    def create_agent(self, action: str, **kwargs) -> AgentInterface:
-        """Create an instance of an agent for a specific action."""
-        agent_cls = self.get_agent(action)
+        self.metrics.record(
+            name="agent_registrations",
+            value=1,
+            metric_type="counter",
+            component="agent_registry",
+            labels={"agent_type": name}
+        )
+
+    async def instantiate(self, name: str, **kwargs) -> Agent:
+        """Create an instance of a registered agent."""
+        if name not in self._agent_classes:
+            raise ValueError(f"No agent class registered with name: {name}")
+
         try:
-            agent = agent_cls(**kwargs)
-            self.logger.debug(f"Created agent instance for action: {action}")
+            agent_class = self._agent_classes[name]
+            agent = agent_class(
+                metrics_collector=self.metrics,
+                error_handler=self.error_handler,
+                **kwargs
+            )
+            self._agents[name] = agent
+            self._active_agents[name] = False
+            
+            self._logger.info(f"Instantiated agent: {name}")
             return agent
+            
         except Exception as e:
-            self.logger.error(f"Failed to create agent for action {action}: {str(e)}")
+            await self.error_handler.handle_error(
+                e,
+                {
+                    "component": "agent_registry",
+                    "operation": "instantiate",
+                    "agent_name": name
+                }
+            )
             raise
+
+    async def start_agent(self, name: str) -> None:
+        """Start a registered agent."""
+        if name not in self._agents:
+            raise ValueError(f"No agent instance found with name: {name}")
+            
+        if self._active_agents[name]:
+            return
+
+        try:
+            agent = self._agents[name]
+            await agent.start()
+            self._active_agents[name] = True
+            
+            self._logger.info(f"Started agent: {name}")
+            
+        except Exception as e:
+            await self.error_handler.handle_error(
+                e,
+                {
+                    "component": "agent_registry",
+                    "operation": "start",
+                    "agent_name": name
+                }
+            )
+            raise
+
+    async def stop_agent(self, name: str) -> None:
+        """Stop a registered agent."""
+        if name not in self._agents:
+            raise ValueError(f"No agent instance found with name: {name}")
+            
+        if not self._active_agents[name]:
+            return
+
+        try:
+            agent = self._agents[name]
+            await agent.stop()
+            self._active_agents[name] = False
+            
+            self._logger.info(f"Stopped agent: {name}")
+            
+        except Exception as e:
+            await self.error_handler.handle_error(
+                e,
+                {
+                    "component": "agent_registry",
+                    "operation": "stop",
+                    "agent_name": name
+                }
+            )
+            raise
+
+    async def send_message(self, message: Message) -> None:
+        """Send a message to the specified agent."""
+        if message.agent not in self._agents:
+            raise ValueError(f"No agent instance found with name: {message.agent}")
+            
+        if not self._active_agents[message.agent]:
+            raise RuntimeError(f"Agent '{message.agent}' is not active")
+
+        try:
+            agent = self._agents[message.agent]
+            await agent.handle_message(message)
+            
+            self.metrics.record(
+                name="messages_sent",
+                value=1,
+                metric_type="counter",
+                component="agent_registry",
+                labels={
+                    "agent": message.agent,
+                    "intent": message.intent
+                }
+            )
+            
+        except Exception as e:
+            await self.error_handler.handle_error(
+                e,
+                {
+                    "component": "agent_registry",
+                    "operation": "send_message",
+                    "message_id": message.id,
+                    "agent": message.agent
+                }
+            )
+            raise
+
+    def get_agent(self, name: str) -> Optional[Agent]:
+        """Get an agent instance by name."""
+        return self._agents.get(name)
+
+    def list_agents(self) -> List[str]:
+        """List all registered agent names."""
+        return list(self._agents.keys())
+
+    def get_agent_status(self, name: str) -> Dict[str, Any]:
+        """Get the current status of an agent."""
+        if name not in self._agents:
+            raise ValueError(f"No agent instance found with name: {name}")
+            
+        return {
+            "name": name,
+            "active": self._active_agents[name],
+            "type": self._agents[name].__class__.__name__
+        }

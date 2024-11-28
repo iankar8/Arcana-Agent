@@ -9,6 +9,7 @@ from enum import Enum
 
 from .logging_config import get_logger
 from core.interfaces import Agent
+from core.monitoring import MetricsCollector
 
 logger = get_logger(__name__)
 
@@ -120,7 +121,8 @@ class CircuitBreaker:
 class ErrorHandler(Agent):
     """Central error handling system."""
     
-    def __init__(self):
+    def __init__(self, metrics_collector: MetricsCollector):
+        self.metrics = metrics_collector
         self.error_handlers: Dict[Type[Exception], List[Callable]] = {}
         self.recovery_strategies: Dict[ErrorCategory, RecoveryStrategy] = {
             ErrorCategory.VALIDATION: RecoveryStrategy.IGNORE,
@@ -279,3 +281,82 @@ class ErrorHandler(Agent):
         """Handle shutdown strategy."""
         self.logger.critical(f"Initiating shutdown due to: {context.error_type}")
         # Implement graceful shutdown logic here
+
+class DefaultErrorHandler(ErrorHandler):
+    """Default implementation of error handling."""
+
+    def __init__(self, metrics_collector: MetricsCollector, max_history: int = 1000):
+        super().__init__(metrics_collector)
+        self.max_history = max_history
+        self._error_history: list[tuple[Exception, ErrorContext]] = []
+        self._logger = logging.getLogger(__name__)
+
+    async def handle_error(
+        self,
+        error: Exception,
+        context: Dict[str, Any],
+        severity: ErrorSeverity = ErrorSeverity.MEDIUM
+    ) -> None:
+        """Handle an error with context."""
+        error_context = ErrorContext(
+            timestamp=datetime.now(),
+            component=context.get("component", "unknown"),
+            operation=context.get("operation", "unknown"),
+            details=context,
+            error_type=error.__class__.__name__,
+            message=str(error),
+            stack_trace=traceback.format_exc(),
+            severity=severity,
+            category=self._get_category(error),
+            additional_info=context
+        )
+        
+        self._error_history.append((error, error_context))
+        
+        # Log the error
+        log_message = (
+            f"Error in {error_context.component}.{error_context.operation}: "
+            f"{str(error)}\nContext: {context}\n{traceback.format_exc()}"
+        )
+        
+        if severity == ErrorSeverity.CRITICAL:
+            self._logger.critical(log_message)
+        elif severity == ErrorSeverity.HIGH:
+            self._logger.error(log_message)
+        elif severity == ErrorSeverity.MEDIUM:
+            self._logger.warning(log_message)
+        else:
+            self._logger.info(log_message)
+            
+        # Update metrics
+        self.metrics.increment_counter(
+            "errors_total",
+            {
+                "component": error_context.component,
+                "operation": error_context.operation,
+                "severity": severity.value,
+                "error_type": error.__class__.__name__
+            }
+        )
+
+    async def get_error_history(
+        self,
+        component: Optional[str] = None,
+        severity: Optional[ErrorSeverity] = None,
+        limit: int = 100
+    ) -> List[Tuple[Exception, ErrorContext]]:
+        """Get error history with optional filters."""
+        filtered_history = []
+        
+        for error, context in reversed(self._error_history):
+            if component and context.component != component:
+                continue
+                
+            # Note: We don't filter by severity here since it's not stored in context
+            # This could be enhanced by storing severity in ErrorContext
+            
+            filtered_history.append((error, context))
+            if len(filtered_history) >= limit:
+                break
+                
+        return filtered_history

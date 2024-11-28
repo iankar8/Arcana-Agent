@@ -1,0 +1,75 @@
+name: Morning Routine Test
+description: Test the morning routine workflow with various conditions
+
+workflow_id: morning_routine_001
+
+mock_data:
+  weather:
+    temperature: 65
+    conditions: "sunny"
+    precipitation_chance: 0
+  
+  calendar:
+    meetings:
+      - title: "Team Standup"
+        time: "09:00"
+        duration: 30
+      - title: "Project Review"
+        time: "10:30"
+        duration: 60
+  
+  traffic:
+    commute_time: 25
+    conditions: "light"
+    
+  home_automation:
+    temperature: 68
+    lights: "off"
+    coffee_maker: "off"
+
+expected_outcomes:
+  weather_check:
+    temperature: 65
+    needs_umbrella: false
+    needs_jacket: false
+    
+  schedule_check:
+    first_meeting: "09:00"
+    prep_time_needed: 45
+    
+  commute_planning:
+    departure_time: "08:15"
+    route: "default"
+    
+  home_automation:
+    actions:
+      - device: "coffee_maker"
+        action: "turn_on"
+        time: "07:30"
+      - device: "lights"
+        action: "turn_on"
+        time: "07:45"
+
+performance_thresholds:
+  total_duration: 5.0  # seconds
+  weather_check_duration: 1.0
+  schedule_check_duration: 1.0
+  commute_planning_duration: 1.0
+  home_automation_duration: 1.0
+
+failure_scenarios:
+  weather_check:
+    - type: "error"
+      message: "Weather service unavailable"
+      recovery: "use_cached_data"
+  
+  schedule_check:
+    - type: "delay"
+      duration: 2.0
+      recovery: "skip_non_critical"
+
+cleanup_steps:
+  - type: "delete"
+    target: "home_automation_state"
+  - type: "reset"
+    target: "calendar_cache"

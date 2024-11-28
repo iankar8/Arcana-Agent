@@ -1,0 +1,44 @@
+name: morning_routine
+description: "Automated morning routine workflow"
+version: "1.0.0"
+
+metadata:
+  category: "daily_routines"
+  tags: ["morning", "productivity"]
+  author: "Arcana"
+
+steps:
+  - agent: task_agent
+    intent: create_task
+    payload:
+      task_name: "Check weather"
+      priority: high
+    timeout: 30
+    retry:
+      max_attempts: 3
+      delay: 5
+
+  - agent: reminder_agent
+    intent: set_reminder
+    payload:
+      title: "Check emails"
+      time: "08:00"
+      description: "Review and respond to important emails"
+    requires: ["task_agent"]
+
+  - agent: task_agent
+    intent: create_task
+    payload:
+      task_name: "Plan daily schedule"
+      priority: medium
+      deadline: "09:00"
+    requires: ["reminder_agent"]
+
+  - agent: coordinator_agent
+    intent: schedule_meeting
+    payload:
+      title: "Daily standup"
+      time: "09:30"
+      duration: 30
+      participants: ["team"]
+    requires: ["task_agent"]
